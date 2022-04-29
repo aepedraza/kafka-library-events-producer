@@ -1,0 +1,17 @@
+spring:
+  profiles:
+    # In real world apps, there may be several profiles (LOCAL, DEV, PROD, etc)
+    active: local
+---
+spring:
+  profiles: local
+  kafka:
+    producer:
+      bootstrap-servers:
+        - localhost:9092
+        - localhost:9093
+        - localhost:9094
+      # Key: same type as LibraryEvent id
+      key-serializer: org.apache.kafka.common.serialization.IntegerSerializer
+      # To serialize as JSON the book data
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
