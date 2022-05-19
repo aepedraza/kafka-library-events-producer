@@ -9,6 +9,8 @@ spring:
       on-profile:
         - local
   kafka:
+    template:
+      default-topic: library-events
     producer:
       bootstrap-servers:
         - localhost:9092
