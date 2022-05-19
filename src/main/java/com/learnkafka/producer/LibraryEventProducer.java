@@ -27,6 +27,7 @@ public class LibraryEventProducer {
         String value = mapper.writeValueAsString(libraryEvent);
 
         // Sends to default topic
+        // If key is null, send to available partition using round-robin
         ListenableFuture<SendResult<Integer, String>> resultFuture = kafkaTemplate.sendDefault(key, value);
 
         resultFuture.addCallback(new ListenableFutureCallback<>() {
