@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learnkafka.domain.LibraryEvent;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
@@ -24,6 +25,8 @@ public class LibraryEventProducer {
 
     @Autowired
     private ObjectMapper mapper;
+
+    private String topic = "library-events";
 
     /**
      * Sends event asynchronously using Kafka with default topic.
@@ -95,5 +98,33 @@ public class LibraryEventProducer {
         }
 
         return sendResult;
+    }
+
+    public void sendLibraryEventUsingProducerRecord(LibraryEvent libraryEvent) throws JsonProcessingException {
+
+        Integer key = libraryEvent.getLibraryEventId();
+        String value = mapper.writeValueAsString(libraryEvent);
+        ProducerRecord<Integer, String> producerRecord = buildProducerRecord(key, value, topic);
+
+        // producerRecords has the topic data, among with key, value and other metadata
+        ListenableFuture<SendResult<Integer, String>> resultFuture = kafkaTemplate.send(producerRecord);
+
+        // Callback executed in a different thread
+        resultFuture.addCallback(new ListenableFutureCallback<>() {
+            @Override
+            public void onFailure(Throwable ex) {
+                handleFailure(key, value, ex);
+            }
+
+            @Override
+            public void onSuccess(SendResult<Integer, String> result) {
+                handleSuccess(key, value, result);
+            }
+        });
+    }
+
+    private ProducerRecord<Integer, String> buildProducerRecord(Integer key, String value, String topic) {
+        // TODO: 22/5/22 Pass headers and partitions data (next lecture)
+        return new ProducerRecord<>(topic, null, key, value, null);
     }
 }
