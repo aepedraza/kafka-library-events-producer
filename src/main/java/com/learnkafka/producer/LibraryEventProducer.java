@@ -26,7 +26,7 @@ public class LibraryEventProducer {
     @Autowired
     private ObjectMapper mapper;
 
-    private String topic = "library-events";
+    private final String topic = "library-events";
 
     /**
      * Sends event asynchronously using Kafka with default topic.
@@ -44,31 +44,27 @@ public class LibraryEventProducer {
         ListenableFuture<SendResult<Integer, String>> resultFuture = kafkaTemplate.sendDefault(key, value);
 
         // Callback executed in a different thread
-        resultFuture.addCallback(new ListenableFutureCallback<>() {
+        resultFuture.addCallback(loggingCallback(key, value));
+    }
+
+    private ListenableFutureCallback<SendResult<Integer, String>> loggingCallback(Integer key, String value) {
+        return new ListenableFutureCallback<>() {
             @Override
             public void onFailure(Throwable ex) {
-                handleFailure(key, value, ex);
+                log.error("Error sending message. Key: {}, value: {}", key, value);
+                try {
+                    throw ex;
+                } catch (Throwable e) {
+                    log.error("Error in onFailure: {}", e.getMessage());
+                }
             }
 
             @Override
             public void onSuccess(SendResult<Integer, String> result) {
-                handleSuccess(key, value, result);
+                log.info("Message sent successfully. Key: {}, value: {}. Partition: {}",
+                        key, value, result.getRecordMetadata().partition());
             }
-        });
-    }
-
-    private void handleSuccess(Integer key, String value, SendResult<Integer, String> result) {
-        log.info("Message sent successfully. Key: {}, value: {}. Partition: {}",
-                key, value, result.getRecordMetadata().partition());
-    }
-
-    private void handleFailure(Integer key, String value, Throwable ex) {
-        log.error("Error sending message. Key: {}, value: {}", key, value);
-        try {
-            throw ex;
-        } catch (Throwable e) {
-            log.error("Error in onFailure: {}", e.getMessage());
-        }
+        };
     }
 
     /**
@@ -104,26 +100,16 @@ public class LibraryEventProducer {
 
         Integer key = libraryEvent.getLibraryEventId();
         String value = mapper.writeValueAsString(libraryEvent);
-        ProducerRecord<Integer, String> producerRecord = buildProducerRecord(key, value, topic);
+        ProducerRecord<Integer, String> producerRecord = buildProducerRecord(key, value);
 
         // producerRecords has the topic data, among with key, value and other metadata
         ListenableFuture<SendResult<Integer, String>> resultFuture = kafkaTemplate.send(producerRecord);
 
         // Callback executed in a different thread
-        resultFuture.addCallback(new ListenableFutureCallback<>() {
-            @Override
-            public void onFailure(Throwable ex) {
-                handleFailure(key, value, ex);
-            }
-
-            @Override
-            public void onSuccess(SendResult<Integer, String> result) {
-                handleSuccess(key, value, result);
-            }
-        });
+        resultFuture.addCallback(loggingCallback(key, value));
     }
 
-    private ProducerRecord<Integer, String> buildProducerRecord(Integer key, String value, String topic) {
+    private ProducerRecord<Integer, String> buildProducerRecord(Integer key, String value) {
         // TODO: 22/5/22 Pass headers and partitions data (next lecture)
         return new ProducerRecord<>(topic, null, key, value, null);
     }
