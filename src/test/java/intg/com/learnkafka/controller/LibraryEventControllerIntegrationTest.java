@@ -12,6 +12,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.test.context.EmbeddedKafka;
+import org.springframework.test.context.TestPropertySource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -22,12 +24,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * @author Alvaro Pedraza
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@EmbeddedKafka(topics = {"library-events"}, partitions = 3)
+@TestPropertySource(properties = {
+        "spring.kafka.producer.bootstrap-servers=${spring.embedded.kafka.brokers}",
+        "spring.kafka.admin.properties.bootstrap.servers=${spring.embedded.kafka.brokers}"
+        // spring.embedded.kafka.brokers taken from EmbeddedKafkaBroker.
+        // Property key for the brokers configured by @EmbeddedKafka
+})
 public class LibraryEventControllerIntegrationTest {
 
-    // TODO: 25/5/22 Add Embedded Kafka
-
     @Autowired
-    private TestRestTemplate restTemplate; // maps to random port
+    private TestRestTemplate restTemplate; // REST client for test mapped to the configured random port
 
     @Test
     void postLibraryEvent() {
@@ -46,10 +53,10 @@ public class LibraryEventControllerIntegrationTest {
         HttpEntity<LibraryEvent> request = new HttpEntity<>(libraryEvent, headers);
 
         //when
-        ResponseEntity<LibraryEvent> responseEntity = restTemplate.exchange("/v1/libraryEvent", HttpMethod.POST, request, LibraryEvent.class);
+        ResponseEntity<LibraryEvent> responseEntity = restTemplate.exchange("/v1/library-event",
+                HttpMethod.POST, request, LibraryEvent.class);
 
         //then
-        // At this point, only works if Kafka Broker is running externally
         assertEquals(HttpStatus.CREATED, responseEntity.getStatusCode());
     }
 
