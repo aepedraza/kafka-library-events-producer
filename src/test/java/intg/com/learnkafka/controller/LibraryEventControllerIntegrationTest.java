@@ -2,7 +2,14 @@ package com.learnkafka.controller;
 
 import com.learnkafka.domain.Book;
 import com.learnkafka.domain.LibraryEvent;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.serialization.IntegerDeserializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -12,8 +19,14 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.kafka.test.context.EmbeddedKafka;
+import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.context.TestPropertySource;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,13 +49,32 @@ public class LibraryEventControllerIntegrationTest {
     @Autowired
     private TestRestTemplate restTemplate; // REST client for test mapped to the configured random port
 
+    @Autowired
+    private EmbeddedKafkaBroker broker;
+
+    private Consumer<Integer, String> consumer;
+
+    @BeforeEach
+    void setUp() {
+        Map<String, Object> configs = new HashMap<>(KafkaTestUtils.consumerProps("group1", "true", broker));
+        consumer = new DefaultKafkaConsumerFactory<>(configs, new IntegerDeserializer(), new StringDeserializer())
+                .createConsumer();
+        broker.consumeFromAllEmbeddedTopics(consumer);
+    }
+
+    @AfterEach
+    void tearDown() {
+        consumer.close();
+    }
+
     @Test
+    @Timeout(5)
     void postLibraryEvent() {
         //given
         Book book = Book.builder()
                 .bookId(123)
                 .bookAuthor("Dilip")
-                .bookName("Kafka Using Spring Boot")
+                .bookName("Kafka using Spring Boot")
                 .build();
         LibraryEvent libraryEvent = LibraryEvent.builder()
                 .libraryEventId(null)
@@ -58,6 +90,14 @@ public class LibraryEventControllerIntegrationTest {
 
         //then
         assertEquals(HttpStatus.CREATED, responseEntity.getStatusCode());
+
+        ConsumerRecord<Integer, String> record = KafkaTestUtils.getSingleRecord(consumer, "library-events");
+        assertEquals(expectedRecord(), record.value());
+    }
+
+    private String expectedRecord() {
+        return "{\"libraryEventId\":null,\"libraryEventType\":\"NEW\"," +
+                "\"book\":{\"bookId\":123,\"bookName\":\"Kafka using Spring Boot\",\"bookAuthor\":\"Dilip\"}}";
     }
 
 
