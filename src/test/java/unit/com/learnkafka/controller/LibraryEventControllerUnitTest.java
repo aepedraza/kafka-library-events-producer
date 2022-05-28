@@ -12,6 +12,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static com.learnkafka.test.repository.BookForTestRepository.kafkaSpringBootDilip;
+import static com.learnkafka.test.repository.LibraryEventForTestRepository.libraryEventWithNullId;
 import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,16 +32,7 @@ class LibraryEventControllerUnitTest {
 
     @Test
     void test_postLibraryEvent_returnsCreated() throws Exception {
-        Book book = Book.builder()
-                .bookId(123)
-                .bookAuthor("Dilip")
-                .bookName("Kafka using Spring Boot")
-                .build();
-        LibraryEvent libraryEvent = LibraryEvent.builder()
-                .libraryEventId(null)
-                .book(book)
-                .build();
-
+        LibraryEvent libraryEvent = libraryEventWithNullId(kafkaSpringBootDilip());
         String json = mapper.writeValueAsString(libraryEvent);
 
         doNothing().when(producer).sendLibraryEventUsingProducerRecord(libraryEvent);

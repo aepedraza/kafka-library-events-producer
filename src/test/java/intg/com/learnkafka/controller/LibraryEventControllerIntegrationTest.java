@@ -28,6 +28,8 @@ import org.springframework.test.context.TestPropertySource;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.learnkafka.test.repository.BookForTestRepository.kafkaSpringBootDilip;
+import static com.learnkafka.test.repository.LibraryEventForTestRepository.libraryEventWithNullId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -71,15 +73,7 @@ public class LibraryEventControllerIntegrationTest {
     @Timeout(5)
     void postLibraryEvent() {
         //given
-        Book book = Book.builder()
-                .bookId(123)
-                .bookAuthor("Dilip")
-                .bookName("Kafka using Spring Boot")
-                .build();
-        LibraryEvent libraryEvent = LibraryEvent.builder()
-                .libraryEventId(null)
-                .book(book)
-                .build();
+        LibraryEvent libraryEvent = libraryEventWithNullId(kafkaSpringBootDilip());
         HttpHeaders headers = new HttpHeaders();
         headers.set("content-type", MediaType.APPLICATION_JSON.toString());
         HttpEntity<LibraryEvent> request = new HttpEntity<>(libraryEvent, headers);
