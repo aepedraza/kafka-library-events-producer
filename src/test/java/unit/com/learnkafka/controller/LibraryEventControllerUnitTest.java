@@ -1,5 +1,6 @@
 package com.learnkafka.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learnkafka.domain.Book;
 import com.learnkafka.domain.LibraryEvent;
@@ -17,6 +18,7 @@ import static com.learnkafka.test.repository.BookForTestRepository.customBook;
 import static com.learnkafka.test.repository.BookForTestRepository.kafkaSpringBootDilip;
 import static com.learnkafka.test.repository.LibraryEventForTestRepository.libraryEventWithNullId;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -41,9 +43,13 @@ class LibraryEventControllerUnitTest {
         LibraryEvent libraryEvent = libraryEventWithNullId(kafkaSpringBootDilip());
         String json = mapper.writeValueAsString(libraryEvent);
 
-        doNothing().when(producer).sendLibraryEventUsingProducerRecord(libraryEvent);
+        whenProducerSendsLibraryEventReturnNull(libraryEvent);
 
         postLibraryEventWithJsonContent(json).andExpect(status().isCreated());
+    }
+
+    private void whenProducerSendsLibraryEventReturnNull(LibraryEvent libraryEvent) throws JsonProcessingException {
+        when(producer.sendLibraryEventUsingProducerRecord(libraryEvent)).thenReturn(null);
     }
 
     private ResultActions postLibraryEventWithJsonContent(String json) throws Exception {
@@ -57,7 +63,7 @@ class LibraryEventControllerUnitTest {
         LibraryEvent libraryEvent = libraryEventWithNullId(null);
         String json = mapper.writeValueAsString(libraryEvent);
 
-        doNothing().when(producer).sendLibraryEventUsingProducerRecord(libraryEvent);
+        whenProducerSendsLibraryEventReturnNull(libraryEvent);
 
         performPostAndExpect4xxWithErrorMessage(json, EXPECTED_MESSAGE_BOOK_NULL);
     }
@@ -73,7 +79,7 @@ class LibraryEventControllerUnitTest {
         LibraryEvent libraryEvent = libraryEventWithNullId(customBook(null, null, "The book name"));
         String json = mapper.writeValueAsString(libraryEvent);
 
-        doNothing().when(producer).sendLibraryEventUsingProducerRecord(libraryEvent);
+        whenProducerSendsLibraryEventReturnNull(libraryEvent);
 
         performPostAndExpect4xxWithErrorMessage(json, EXPECTED_MESSAGE_BOOK_WITH_NULL_FIELDS);
     }
