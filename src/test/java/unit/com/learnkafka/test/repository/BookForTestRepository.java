@@ -8,10 +8,14 @@ public final class BookForTestRepository {
     }
 
     public static Book kafkaSpringBootDilip() {
+        return customBook(123, "Dilip", "Kafka using Spring Boot");
+    }
+
+    public static Book customBook(Integer bookId, String bookAuthor, String bookName) {
         return Book.builder()
-                .bookId(123)
-                .bookAuthor("Dilip")
-                .bookName("Kafka using Spring Boot")
+                .bookId(bookId)
+                .bookAuthor(bookAuthor)
+                .bookName(bookName)
                 .build();
     }
 }
