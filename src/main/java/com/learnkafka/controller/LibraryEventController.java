@@ -8,8 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,5 +35,17 @@ public class LibraryEventController {
 
         // Returns 201 even when sending fails. It's up to the app to recover from that error
         return ResponseEntity.status(HttpStatus.CREATED).body(libraryEvent);
+    }
+
+    @PutMapping
+    public ResponseEntity<?> putLibraryEvent(@RequestBody @Valid LibraryEvent libraryEvent) throws JsonProcessingException {
+
+        if (libraryEvent.getLibraryEventId() == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("libraryEventId cannot be null");
+        }
+
+        libraryEvent.setLibraryEventType(LibraryEventType.UPDATE);
+        libraryEventProducer.sendLibraryEventUsingProducerRecord(libraryEvent);
+        return ResponseEntity.status(HttpStatus.OK).body(libraryEvent);
     }
 }
