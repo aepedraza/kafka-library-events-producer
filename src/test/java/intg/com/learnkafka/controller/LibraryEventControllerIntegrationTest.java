@@ -1,6 +1,5 @@
 package com.learnkafka.controller;
 
-import com.learnkafka.domain.Book;
 import com.learnkafka.domain.LibraryEvent;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -29,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.learnkafka.test.repository.BookForTestRepository.kafkaSpringBootDilip;
+import static com.learnkafka.test.repository.LibraryEventForTestRepository.libraryEventWithId;
 import static com.learnkafka.test.repository.LibraryEventForTestRepository.libraryEventWithNullId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -86,13 +86,36 @@ public class LibraryEventControllerIntegrationTest {
         assertEquals(HttpStatus.CREATED, responseEntity.getStatusCode());
 
         ConsumerRecord<Integer, String> record = KafkaTestUtils.getSingleRecord(consumer, "library-events");
-        assertEquals(expectedRecord(), record.value());
+        assertEquals(expectedNewRecord(), record.value());
     }
 
-    private String expectedRecord() {
+    private String expectedNewRecord() {
         return "{\"libraryEventId\":null,\"libraryEventType\":\"NEW\"," +
                 "\"book\":{\"bookId\":123,\"bookName\":\"Kafka using Spring Boot\",\"bookAuthor\":\"Dilip\"}}";
     }
 
+    @Test
+    @Timeout(5)
+    void putLibraryEvent() {
+        //given
+        LibraryEvent libraryEvent = libraryEventWithId(kafkaSpringBootDilip());
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("content-type", MediaType.APPLICATION_JSON.toString());
+        HttpEntity<LibraryEvent> request = new HttpEntity<>(libraryEvent, headers);
 
+        //when
+        ResponseEntity<LibraryEvent> responseEntity = restTemplate.exchange("/v1/library-event",
+                HttpMethod.PUT, request, LibraryEvent.class);
+
+        //then
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+
+        ConsumerRecord<Integer, String> record = KafkaTestUtils.getSingleRecord(consumer, "library-events");
+        assertEquals(expectedUpdateRecord(), record.value());
+    }
+
+    private String expectedUpdateRecord() {
+        return "{\"libraryEventId\":123,\"libraryEventType\":\"UPDATE\"," +
+                "\"book\":{\"bookId\":123,\"bookName\":\"Kafka using Spring Boot\",\"bookAuthor\":\"Dilip\"}}";
+    }
 }

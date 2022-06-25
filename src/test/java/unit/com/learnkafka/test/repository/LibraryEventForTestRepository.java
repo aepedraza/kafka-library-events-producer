@@ -14,4 +14,11 @@ public final class LibraryEventForTestRepository {
                 .book(book)
                 .build();
     }
+
+    public static LibraryEvent libraryEventWithId(Book book) {
+        return LibraryEvent.builder()
+                .libraryEventId(123)
+                .book(book)
+                .build();
+    }
 }
